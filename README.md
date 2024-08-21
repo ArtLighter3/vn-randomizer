@@ -11,7 +11,7 @@ MAY work on these VNs too (Didn't check):
 I'm planning to make graphical interface later, for now it's just command line app.
 
 # How to use
-- Go to releases folder and download .zip archive for the latest version. 
+- Go to releases folder (will add a little later) and download .zip archive for the latest version. 
 - Unpack .zip contents DIRECTLY in root folder of your VN.
 - Run vn-randomizer. By default it randomizes character sprites, soundtrack and backgrounds that are packed in .mpk format.
 - If everything's good then you'll see total amount of randomized files. (However, there may be errors in particular stages, check the output lines)
