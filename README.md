@@ -1,4 +1,6 @@
 # Steins;Gate/Chaos;Child Visual Novel Randomizer
+Just a fun way to replay your favorite VNs. This program randomizes different assets of some Mages Visual Novels (Actually, planning to do more VNs in future). Characters can be shuffled with each other as well as sounds, backgrounds, music. Skins and poses of one character after shuffling with each other are randomized too.
+
 Supported VNs (Tested for Windows Steam):
 - Steins;Gate
 - Steins;Gate 0
