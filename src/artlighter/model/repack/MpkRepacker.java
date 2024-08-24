@@ -169,7 +169,7 @@ public class MpkRepacker implements Repacker {
             int newElementsCount = diff % 4 == 0 ? diff / 4 : diff / 4 + 1;
             addDataToLayFile(mappedLayFile, copycat, newElementsCount, max20Index);
         } else if (copycat40 != null) {
-            System.out.println("Should add some 40s");
+            //System.out.println("Should add some 40s");
             int newElementsCount = diff % 3 == 0 ? diff / 3 : diff / 3 + 1;
             addDataToLayFile(mappedLayFile, copycat40, newElementsCount, max40Index);
         }

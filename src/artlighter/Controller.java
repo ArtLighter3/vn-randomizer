@@ -2,50 +2,30 @@ package artlighter;
 
 import artlighter.model.RandomizerService;
 
+import javax.swing.*;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Controller {
 
+    private View view;
     public final static String BACKUP_FILE_SUFFIX = "_backup";
-    private final static String HELP = """
-            Usage: vn-randomizer [flags...]
-            Without flags (excluding --lowmemory) it randomizes characters, soundtrack and backgrounds
-            Flags:
-            -C, --char            Randomize characters
-            -m, --music           Randomize soundtrack
-            -b, --bg              Randomize backgrounds
-            -c, --cg              Randomize CGs
-            -s, --sound           Randomize sound effects
-            -v, --voice           Randomize voice lines
-            --lowmemory           Run on low memory mode (if you get OutOfMemoryError)
-            --restore             Restore default resource files""";
-    private static final Map<RandomizerService.NovelType, String[]> pathMap = new HashMap<>();
-    //String[0] - Character file
-    //String[1] - Soundtrack file
-    //String[2] - Background file
-    //String[3] - CGs file
-    //String[4] - SFX file
-    //String[5] - Voicelines file
-    static {
-        String[] magesPaths = new String[]{"USRDIR/chara.mpk", "USRDIR/bgm.mpk",
-                                            "USRDIR/bg.mpk", "USRDIR/bg.mpk",
-                                            "USRDIR/se.mpk", "USRDIR/voice.mpk"};
-        pathMap.put(RandomizerService.NovelType.STEINSGATE, magesPaths);
 
-        String[] magesPaths2 = new String[]{"USRDIR/chara.mpk", "USRDIR/bgm.mpk",
-                "USRDIR/bg1.mpk", "USRDIR/bg2.mpk",
-                "USRDIR/se.mpk", "USRDIR/voice.mpk"};
-        pathMap.put(RandomizerService.NovelType.CHAOSCHILD, magesPaths2);
+    public Controller(View view) {
+        this.view = view;
+        view.init();
     }
 
-    public void randomize(RandomizerService.NovelType type, boolean[] options, boolean lowMemoryMode) {
+    public void randomize(RandomizerService.NovelType type, boolean[] options, boolean lowMemoryMode, Path gamePath) {
         RandomizerService service = new RandomizerService(lowMemoryMode);
-        String[] paths = pathMap.get(type);
+        String[] paths = getFullPaths(gamePath, type);
         int randomized = 0;
         boolean[] checks = new boolean[6];
         for (int i = 0; i < checks.length; i++) {
@@ -53,7 +33,7 @@ public class Controller {
             else checks[i] = false;
         }
         System.out.println("------CREATING BACKUPS------");
-        String[] sourcePaths = saveBackups(type, checks);
+        String[] sourcePaths = saveBackups(type, gamePath, checks);
         for (int i = 0; i < sourcePaths.length; i++) {
             if (!Files.exists(Paths.get(sourcePaths[i]))) sourcePaths[i] = paths[i];
         }
@@ -67,21 +47,25 @@ public class Controller {
 
         System.out.println("------TOTAL: " + randomized + " RANDOMIZED FILES------");
     }
-
-    public String[] saveBackups(RandomizerService.NovelType type, boolean[] checks) {
-        String[] filenames = pathMap.get(type);
+    private String[] getFullPaths(Path gamePath, RandomizerService.NovelType type) {
+        String[] paths = type.getFilenames();
+        String[] result = new String[paths.length];
+        for (int i = 0; i < paths.length; i++) result[i] = gamePath.resolve(Paths.get(paths[i])).toString();
+        return result;
+    }
+    public String[] saveBackups(RandomizerService.NovelType type, Path gamePath, boolean[] checks) {
+        String[] filenames = getFullPaths(gamePath, type);
         String[] copies = new String[filenames.length];
         boolean allCreated = true;
         for (int i = 0; i < filenames.length; i++) {
             String path = filenames[i];
-            int pointIndex = path.indexOf(".");
+            int pointIndex = path.lastIndexOf(".");
             String extension = path.substring(pointIndex);
             copies[i] = path.substring(0, pointIndex) + BACKUP_FILE_SUFFIX + extension;
             if (checks[i] && !Files.exists(Paths.get(copies[i]))) {
                 allCreated = false;
                 try {
-                    Files.copy(Paths.get(path),
-                            Paths.get(copies[i]));
+                    Files.copy(Paths.get(path), Paths.get(copies[i]));
                     System.out.println("Backup for " + path + " has been created");
                 } catch (FileNotFoundException ex) {
                     System.out.println("ERROR: File " + path + " not found");
@@ -93,19 +77,40 @@ public class Controller {
         if (allCreated) System.out.println("All backups have been already created");
         return copies;
     }
-
-    public void restoreBackups(RandomizerService.NovelType type) {
-        String[] filenames = pathMap.get(type);
+    public void actionPerformed(Action action) {
+        RandomizerService.NovelType type = view.getNovelType();
+        Path gamePath = view.getGamePath();
+        if (action == Action.RANDOMIZE) {
+            boolean[] options = view.getOptions();
+            boolean lowMemoryMode = view.isLowMemoryMode();
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.submit(() -> {
+                view.enableButtons(false);
+                randomize(type, options, lowMemoryMode, gamePath);
+                view.enableButtons(true);
+            });
+        } else if (action == Action.RESTORE) {
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.submit(() -> {
+                view.enableButtons(false);
+                restoreBackups(gamePath, type);
+                view.enableButtons(true);
+            });
+        }
+    }
+    public void restoreBackups(Path gamePath, RandomizerService.NovelType type) {
+        System.out.println("------RESTORING BACKUPS------");
+        String[] filenames = getFullPaths(gamePath, type);
         String[] copies = new String[filenames.length];
         for (int i = 0; i < filenames.length; i++) {
             String path = filenames[i];
-            int pointIndex = path.indexOf(".");
+            int pointIndex = path.lastIndexOf(".");
             String extension = path.substring(pointIndex);
             copies[i] = path.substring(0, pointIndex) + BACKUP_FILE_SUFFIX + extension;
             try {
                 Files.copy(Paths.get(copies[i]), Paths.get(path), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException ex) {
-                System.out.println("Couldn't restore " + path + " (If you didn't randomize it then ignore this)");
+                System.out.println("Seems like " + path + " is already in its original state");
             }
         }
         for (String path : copies) {
@@ -113,13 +118,20 @@ public class Controller {
                 Files.deleteIfExists(Paths.get(path));
             } catch (IOException ignored) {}
         }
+        System.out.println("------RESTORED------");
     }
 
     public static void main(String[] args) {
-        Set<String> flags = new HashSet<>(Arrays.asList(args));
-        Controller controller = new Controller();
+        //Set<String> flags = new HashSet<>(Arrays.asList(args));
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
 
-        if (flags.contains("--help")) {
+        View view = new View();
+        Controller controller = new Controller(view);
+        view.setController(controller);
+
+        /*if (flags.contains("--help")) {
             System.out.println(HELP);
             return;
         }
@@ -147,9 +159,10 @@ public class Controller {
             if (flags.contains("-c") || flags.contains("--cg")) options[3] = true;
             if (flags.contains("-s") || flags.contains("--sound")) options[4] = true;
             if (flags.contains("-v") || flags.contains("--voice")) options[5] = true;
-        }
+        }*/
 
-        controller.randomize(type, options, lowMemoryMode);
+        //controller.randomize(type, options, lowMemoryMode);
+
         /*long start = System.currentTimeMillis();
 
         MpkRepacker repacker = new MpkRepacker();

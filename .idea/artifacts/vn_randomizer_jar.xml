@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="vn-randomizer:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/vn_randomizer_jar</output-path>
+    <root id="archive" name="vn-randomizer.jar">
+      <element id="module-output" name="vn-randomizer" />
+    </root>
+  </artifact>
+</component>

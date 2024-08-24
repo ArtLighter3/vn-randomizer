@@ -43,6 +43,7 @@ public class MagesRandomizerFactory implements RandomizerFactory {
 
     @Override
     public Randomizer getVoiceRandomizer() {
-        return null;
+        if (sr == null) sr = new SimpleRandomizer();
+        return sr;
     }
 }

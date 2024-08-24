@@ -109,7 +109,25 @@ public class RandomizerService {
     }
 
     public enum NovelType {
-        STEINSGATE, CHAOSCHILD
+        STEINSGATE("USRDIR/chara.mpk", "USRDIR/bgm.mpk",
+                "USRDIR/bg.mpk", "USRDIR/bg.mpk",
+                "USRDIR/se.mpk", "USRDIR/voice.mpk"),
+        CHAOSCHILD("USRDIR/chara.mpk", "USRDIR/bgm.mpk",
+                "USRDIR/bg1.mpk", "USRDIR/bg2.mpk",
+                "USRDIR/se.mpk", "USRDIR/voice.mpk");
+        //String[0] - Character file
+        //String[1] - Soundtrack file
+        //String[2] - Background file
+        //String[3] - CGs file
+        //String[4] - SFX file
+        //String[5] - Voicelines file
+        private String[] filenames;
+        NovelType(String... filenames) {
+            this.filenames = filenames;
+        }
+        public String[] getFilenames() {
+            return filenames;
+        }
     }
 
 }
